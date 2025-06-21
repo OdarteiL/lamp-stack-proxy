@@ -1,0 +1,92 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Scalable LAMP Application with Auto Scaling Group and Application Load Balancer
+
+Parameters:
+  AmiId:
+    Type: String
+    Description: AMI ID of the EC2 instance with the LAMP app installed
+
+Resources:
+  InstanceSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Enable HTTP access
+      VpcId: vpc-02142c632dac10ef0
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+
+  LAMPLaunchTemplate:
+    Type: AWS::EC2::LaunchTemplate
+    Properties:
+      LaunchTemplateName: lamp-launch-template
+      LaunchTemplateData:
+        ImageId: !Ref AmiId
+        InstanceType: t2.micro
+        NetworkInterfaces:
+          - AssociatePublicIpAddress: true
+            DeviceIndex: 0
+            Groups:
+              - !Ref InstanceSecurityGroup
+        UserData:
+          Fn::Base64: |
+            #!/bin/bash
+            sudo systemctl start nginx
+            sudo systemctl enable nginx
+            sudo systemctl start php8.1-fpm || sudo systemctl start php7.4-fpm
+            sudo systemctl enable php8.1-fpm || sudo systemctl enable php7.4-fpm
+
+  ApplicationLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: lamp-alb
+      Subnets:
+        - subnet-0421ca5d91dae099d
+        - subnet-0d152cb94a8560615
+      SecurityGroups:
+        - !Ref InstanceSecurityGroup
+      Scheme: internet-facing
+      LoadBalancerAttributes:
+        - Key: idle_timeout.timeout_seconds
+          Value: '60'
+
+  ALBTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      VpcId: vpc-02142c632dac10ef0
+      Protocol: HTTP
+      Port: 80
+      TargetType: instance
+      HealthCheckPath: /index.php
+
+  ALBListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref ALBTargetGroup
+      LoadBalancerArn: !Ref ApplicationLoadBalancer
+      Port: 80
+      Protocol: HTTP
+
+  LAMPASG:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      MinSize: '1'
+      MaxSize: '2'
+      DesiredCapacity: '2'
+      VPCZoneIdentifier:
+        - subnet-0421ca5d91dae099d
+        - subnet-0d152cb94a8560615
+      LaunchTemplate:
+        LaunchTemplateId: !Ref LAMPLaunchTemplate
+        Version: !GetAtt LAMPLaunchTemplate.LatestVersionNumber
+      TargetGroupARNs:
+        - !Ref ALBTargetGroup
+
+Outputs:
+  LoadBalancerDNS:
+    Description: Public DNS of the Load Balancer
+    Value: !GetAtt ApplicationLoadBalancer.DNSName

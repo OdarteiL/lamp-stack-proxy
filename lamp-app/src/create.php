@@ -1,45 +1,36 @@
-!DOCTYPE html>
-<html lang="en">
+<?php
+include 'db.php';
+
+if ($_POST) {
+    $username = $_POST['username'];
+    $name = $_POST['name'];
+    $email = $_POST['email'];
+    $password = password_hash($_POST['password'], PASSWORD_DEFAULT);
+    
+    $stmt = $pdo->prepare("INSERT INTO users (username, name, email, password) VALUES (?, ?, ?, ?)");
+    $stmt->execute([$username, $name, $email, $password]);
+    
+    header('Location: index.php');
+    exit;
+}
+?>
+<!DOCTYPE html>
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Add New User</title>
+    <title>Add User</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="navbar">
-        <h1>User Management System</h1>
-    </div>
-    
     <div class="container">
+        <h2>Add New User</h2>
         <form method="POST">
-            <h2>Add New User</h2>
-            
-            <div class="form-group">
-                <label for="username">Username</label>
-                <input type="text" id="username" name="username" required>
-            </div>
-            
-            <div class="form-group">
-                <label for="password">Password</label>
-                <input type="password" id="password" name="password" required>
-            </div>
-            
-            <div class="form-group">
-                <label for="name">Name</label>
-                <input type="text" id="name" name="name" required>
-            </div>
-            
-            <div class="form-group">
-                <label for="email">Email</label>
-                <input type="email" id="email" name="email" required>
-            </div>
-            
-            <div class="actions">
-                <button type="submit" class="btn btn-success">Create User</button>
-                <a href="index.php" class="btn">Cancel</a>
-            </div>
+            <input type="text" name="username" placeholder="Username" required>
+            <input type="text" name="name" placeholder="Name" required>
+            <input type="email" name="email" placeholder="Email" required>
+            <input type="password" name="password" placeholder="Password" required>
+            <button type="submit">Add User</button>
         </form>
+        <a href="index.php">Back to Users</a>
     </div>
 </body>
 </html>

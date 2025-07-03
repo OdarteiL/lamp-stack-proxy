@@ -1,51 +1,47 @@
-<?php include 'db.php';
+<?php
+include 'db.php';
 
 $id = $_GET['id'];
-$stmt = $pdo->prepare("SELECT * FROM users WHERE id = ?");
-$stmt->execute([$id]);
-$user = $stmt->fetch();
 
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
+if ($_POST) {
+    $username = $_POST['username'];
     $name = $_POST['name'];
     $email = $_POST['email'];
-    $stmt = $pdo->prepare("UPDATE users SET name=?, email=? WHERE id=?");
-    $stmt->execute([$name, $email, $id]);
-    header("Location: index.php");
-    exit();
+    
+    if (!empty($_POST['password'])) {
+        $password = password_hash($_POST['password'], PASSWORD_DEFAULT);
+        $stmt = $pdo->prepare("UPDATE users SET username=?, name=?, email=?, password=? WHERE id=?");
+        $stmt->execute([$username, $name, $email, $password, $id]);
+    } else {
+        $stmt = $pdo->prepare("UPDATE users SET username=?, name=?, email=? WHERE id=?");
+        $stmt->execute([$username, $name, $email, $id]);
+    }
+    
+    header('Location: index.php');
+    exit;
 }
+
+$stmt = $pdo->prepare("SELECT * FROM users WHERE id=?");
+$stmt->execute([$id]);
+$user = $stmt->fetch();
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Edit User</title>
+    <title>Update User</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="navbar">
-        <h1>User Management System</h1>
-    </div>
-    
     <div class="container">
+        <h2>Update User</h2>
         <form method="POST">
-            <h2>Edit User</h2>
-            
-            <div class="form-group">
-                <label for="name">Name</label>
-                <input type="text" id="name" name="name" value="<?= $user['name'] ?>" required>
-            </div>
-            
-            <div class="form-group">
-                <label for="email">Email</label>
-                <input type="email" id="email" name="email" value="<?= $user['email'] ?>" required>
-            </div>
-            
-            <div class="actions">
-                <button type="submit" class="btn btn-success">Update User</button>
-                <a href="index.php" class="btn">Cancel</a>
-            </div>
+            <input type="text" name="username" value="<?= $user['username'] ?>" required>
+            <input type="text" name="name" value="<?= $user['name'] ?>" required>
+            <input type="email" name="email" value="<?= $user['email'] ?>" required>
+            <input type="password" name="password" placeholder="New Password (leave blank to keep current)">
+            <button type="submit">Update User</button>
         </form>
+        <a href="index.php">Back to Users</a>
     </div>
 </body>
 </html>

@@ -23,24 +23,39 @@
                 <thead>
                     <tr>
                         <th>ID</th>
+                        <th>Username</th>
                         <th>Name</th>
                         <th>Email</th>
+
+                        <th>Created At</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                 <?php
-                $stmt = $pdo->query("SELECT * FROM users");
-                while ($row = $stmt->fetch()) {
-                    echo "<tr>
-                        <td>{$row['id']}</td>
-                        <td>{$row['name']}</td>
-                        <td>{$row['email']}</td>
-                        <td class='actions'>
-                            <a href='update.php?id={$row['id']}' class='btn'>Edit</a>
-                            <a href='delete.php?id={$row['id']}' class='btn btn-danger'>Delete</a>
-                        </td>
-                    </tr>";
+                try {
+                    $stmt = $pdo->query("SELECT * FROM users");
+
+                    if ($stmt->rowCount() > 0) {
+                        while ($row = $stmt->fetch()) {
+                            echo "<tr>
+                                <td>{$row['id']}</td>
+                                <td>{$row['username']}</td>
+                                <td>{$row['name']}</td>
+                                <td>{$row['email']}</td>
+
+                                <td>{$row['created_at']}</td>
+                                <td class='actions'>
+                                    <a href='update.php?id={$row['id']}' class='btn'>Edit</a>
+                                    <a href='delete.php?id={$row['id']}' class='btn btn-danger'>Delete</a>
+                                </td>
+                            </tr>";
+                        }
+                    } else {
+                        echo "<tr><td colspan='6'>No users found.</td></tr>";
+                    }
+                } catch (PDOException $e) {
+                    echo "<tr><td colspan='6'>Error: " . $e->getMessage() . "</td></tr>";
                 }
                 ?>
                 </tbody>
